@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "start": "node timesheet.js"
+  },
+  "dependencies": {
+    "nodemailer": "^10.0.0",
+    "puppeteer": "^25.10.0"
+  },
+  "allowScripts": {
+    "puppeteer@25.10.0": true
+  }
+}

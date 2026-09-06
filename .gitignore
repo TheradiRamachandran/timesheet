@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Browser profile and authentication data
+session_data/
+
+# Local environment files and secrets
+.env
+.env.*
+!.env.example
+
+# Logs and local output
+*.log
+npm-debug.log*
+
+# Windows and editor files
+.DS_Store
+Thumbs.db
+.vscode/
