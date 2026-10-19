@@ -3,7 +3,7 @@ name: Timesheet automation
 on:
   schedule:
     # 12:00 IST = 06:30 UTC. GitHub may delay scheduled jobs slightly.
-    - cron: '30 6 * * *'
+    - cron: '10 16 * * *'
   workflow_dispatch:
 
 jobs:
