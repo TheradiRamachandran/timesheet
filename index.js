@@ -190,7 +190,7 @@ async function run() {
 
         const browser = await puppeteer.launch({
             headless: process.env.HEADLESS === 'true',
-            args: ['--start-maximized'],
+            args: process.env.GITHUB_ACTIONS === 'true' ? ['--no-sandbox', '--start-maximized'] : ['--start-maximized'],
             userDataDir: config.sessionDir
         });
 
