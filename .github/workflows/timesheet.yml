@@ -2,8 +2,8 @@ name: Timesheet automation
 
 on:
   schedule:
-    # Temporary test: 21:20 IST = 15:50 UTC. Revert after the test run.
-    - cron: '50 15 * * *'
+    # Temporary test: 21:25 IST = 15:55 UTC. Revert after the test run.
+    - cron: '55 15 * * *'
   workflow_dispatch:
 
 jobs:
