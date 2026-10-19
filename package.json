@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "start": "node timesheet.js"
+    "start": "node index.js"
   },
   "dependencies": {
     "nodemailer": "^10.0.0",
