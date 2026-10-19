@@ -2,8 +2,8 @@ name: Timesheet automation
 
 on:
   schedule:
-    # Temporary test: 21:25 IST = 15:55 UTC. Revert after the test run.
-    - cron: '55 15 * * *'
+    # 12:00 IST = 06:30 UTC. GitHub may delay scheduled jobs slightly.
+    - cron: '30 6 * * *'
   workflow_dispatch:
 
 jobs:
