@@ -4,7 +4,7 @@ const config = {
     targetTime: process.env.TARGET_TIME || '03:08',
     targetHours: Number(process.env.TARGET_HOURS || 9),
     url: 'https://timesheet.ultimatix.net/timesheetEntry/#/Home',
-    nonBillableInputXPath: "//*[contains(@id, 'effortUnassign') and @type='text' and @maxlength='5'][1]",
+    nonBillableInputXPath: "//*[@id='effortUnassign01' and @type='text' and @maxlength='5']",
     applyChanges: process.env.APPLY_TIMESHEET === 'true',
     sessionDir: './session_data',
     timeout: 120000
@@ -108,24 +108,30 @@ async function selectDate(page, day) {
 }
 
 async function updateTask(page) {
-    const headerClicked = await page.evaluate(() => {
-        const textElements = Array.from(document.querySelectorAll('div, span, a, mat-panel-title'));
-        const header = textElements.find(element => element.textContent?.includes('Unassigned Task'));
-        if (!header) return false;
-        header.click();
-        return true;
-    });
+    const inputVisible = await page.evaluate(inputXPath => Boolean(
+        document.evaluate(inputXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
+    ), config.nonBillableInputXPath);
 
-    if (!headerClicked) {
-        return { status: 'no_header', message: 'Unassigned Task section not found.' };
-    }
+    if (!inputVisible) {
+        const headerClicked = await page.evaluate(() => {
+            const header = Array.from(document.querySelectorAll('button, [role="button"], mat-panel-title'))
+                .find(element => (element.innerText || element.textContent || '').includes('Unassigned Task'));
+            if (!header) return false;
+            header.click();
+            return true;
+        });
 
-    try {
-        await page.waitForFunction((inputXPath) => Boolean(
-            document.evaluate(inputXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
-        ), { timeout: 10000 }, config.nonBillableInputXPath);
-    } catch {
-        return { status: 'no_input', message: 'Non-billable task input not found after expanding the section.' };
+        if (!headerClicked) {
+            return { status: 'no_header', message: 'Unassigned Task section not found.' };
+        }
+
+        try {
+            await page.waitForFunction((inputXPath) => Boolean(
+                document.evaluate(inputXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
+            ), { timeout: 10000 }, config.nonBillableInputXPath);
+        } catch {
+            return { status: 'no_input', message: 'Non-billable task input not found after expanding the section.' };
+        }
     }
 
     const inputState = await page.evaluate((targetHours, inputXPath) => {
@@ -136,23 +142,24 @@ async function updateTask(page) {
         if (!input) return { status: 'no_input', message: 'Non-billable task input not found.' };
         if (input.disabled || input.readOnly) return { status: 'disabled', message: 'Input field is locked.' };
 
+        const task = (input.closest('tr')?.innerText || '').replace(/\s+/g, ' ').trim();
         const rawValue = input.value.trim();
         const currentValue = rawValue === '' ? 0 : Number(rawValue);
         if (!Number.isFinite(currentValue) || currentValue < 0) {
             return { status: 'invalid_value', message: `Input contains an unexpected value: ${input.value}.` };
         }
         if (currentValue >= targetHours) {
-            return { status: 'skipped', message: `Value is ${currentValue}; no update required.` };
+            return { status: 'skipped', message: `${task}: Non Billable value is ${currentValue}; no update required.` };
         }
 
-        return { status: 'ready', currentValue };
+        return { status: 'ready', currentValue, task };
     }, config.targetHours, config.nonBillableInputXPath);
 
     if (inputState.status !== 'ready') return inputState;
     if (!config.applyChanges) {
         return {
             status: 'dry_run',
-            message: `Dry run: would change Non Billable hours from ${inputState.currentValue} to ${config.targetHours}; nothing was submitted.`
+            message: `Dry run: would change Non Billable hours for "${inputState.task}" from ${inputState.currentValue} to ${config.targetHours}; nothing was submitted.`
         };
     }
 
@@ -191,7 +198,7 @@ async function updateTask(page) {
     });
 
     if (!submit) return { status: 'no_submit', message: 'Submit button not found.' };
-    return { status: 'submitted', message: `Submit clicked for ${config.targetHours} Non Billable hours. Verify the entry in Ultimatix.` };
+    return { status: 'submitted', message: `Submit clicked for ${config.targetHours} Non Billable hours for "${inputState.task}". Verify the entry in Ultimatix.` };
 }
 
 async function run() {
